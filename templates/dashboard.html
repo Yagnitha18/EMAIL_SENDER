@@ -1,1 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <title>Email Dashboard</title>
+</head>
+<body>
+    <h1>Email Dashboard</h1>
+
+    <!-- Form to upload CSV -->
+    <form action="/upload" method="POST" id="uploadForm" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".csv">
+        <button type="submit">Upload CSV</button>
+    </form>
+
+    <!-- Section to input a custom template -->
+    <form id="promptForm">
+        <h2>Custom Email Template</h2>
+        <textarea id="customTemplate" rows="5" cols="50" placeholder="Write your email template here. Use placeholders like {First Name}, {Company Name}, {Location}, etc."></textarea>
+        <button type="button" id="useTemplateButton">Generate Emails with Custom Template</button>
+    </form>
+
+    <!-- Section for scheduling and throttling options -->
+    <form id="scheduleForm">
+        <h2>Scheduling and Throttling Options</h2>
+
+        <!-- Schedule all emails for a specific time -->
+        <label for="scheduleTime">Schedule Emails for:</label>
+        <input type="datetime-local" id="scheduleTime" name="scheduleTime"><br><br>
+
+        <!-- Stagger emails in batches -->
+        <label for="batchSize">Emails per Batch:</label>
+        <input type="number" id="batchSize" name="batchSize" placeholder="Enter batch size"><br><br>
+
+        <label for="interval">Interval Between Batches (in minutes):</label>
+        <input type="number" id="interval" name="interval" placeholder="Enter interval"><br><br>
+
+        <!-- Submit Button -->
+        <button type="button" id="scheduleEmailsButton">Schedule Emails</button>
+    </form>
+
+    <!-- Section to display email statuses -->
+    <div id="emailStatus">
+        <h2>Email Statuses</h2>
+        <div id="status_counts">
+            <p>Sent: 0</p>
+            <p>Delivered: 0</p>
+            <p>Failed: 0</p>
+            <p>Opened: 0</p>
+        </div>
+        <div id="progressBar">
+            <p>Sending Progress: 0% (0 of 0 emails sent)</p>
+            <div style="width: 100%; background-color: #f3f3f3;">
+                <div style="width: 0%; background-color: #4caf50; height: 25px;"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Section to display generated emails -->
+    <div id="generatedEmails" style="margin-top: 20px;">
+        <h2>Generated Emails</h2>
+        <div id="emailMessages"></div>
+    </div>
+
+    <script>
+        // Fetch analytics data periodically
+         function fetchAnalytics() {
+    $.get('/analytics', function(data) {
+        let html = '';
+        let progressHtml = '';
+        let totalEmails = data.Total;
+        let sentEmails = data.Sent;
+        let failedEmails = data.Failed;
+        let deliveredEmails = data.Delivered;
+        let openedEmails = data.Opened;
+
+        html += `<p>Sent: ${sentEmails}</p>`;
+        html += `<p>Delivered: ${deliveredEmails}</p>`;
+        html += `<p>Failed: ${failedEmails}</p>`;
+        html += `<p>Opened: ${openedEmails}</p>`;
+
+        // Calculate progress
+        let progress = Math.round((sentEmails / totalEmails) * 100);
+        progressHtml = `
+            <p>Sending Progress: ${progress}% (${sentEmails} of ${totalEmails} emails sent)</p>
+            <div style="width: 100%; background-color: #f3f3f3;">
+                <div style="width: ${progress}%; background-color: #4caf50; height: 25px;"></div>
+            </div>
+        `;
+
+        $('#status_counts').html(html);
+        $('#progressBar').html(progressHtml);
+    });
+}
+        setInterval(fetchAnalytics, 5000);  // Fetch data every 5 seconds
+
+        // Handle email generation with a custom template
+        $('#useTemplateButton').click(function() {
+            const customTemplate = $('#customTemplate').val();
+            if (!customTemplate.trim()) {
+                alert('Please enter a valid template.');
+                return;
+            }
+
+            $.ajax({
+                url: '/generate_emails',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ template: customTemplate }),
+                success: function(response) {
+                    if (response.error) {
+                        alert(`Error: ${response.error}`);
+                    } else {
+                        const emailMessages = $('#emailMessages');
+                        emailMessages.empty(); // Clear any previous results
+                        response.messages.forEach((message, index) => {
+                            emailMessages.append(`<p><strong>Email ${index + 1}:</strong> ${message}</p>`);
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    alert(`An error occurred: ${xhr.responseText}`);
+                }
+            });
+        });
+
+        // Handle default email generation button click
+        $('#generateEmailsButton').click(function() {
+            $.ajax({
+                url: '/generate_emails',
+                type: 'POST',
+                success: function(response) {
+                    if (response.error) {
+                        alert(`Error: ${response.error}`);
+                    } else {
+                        const emailMessages = $('#emailMessages');
+                        emailMessages.empty(); // Clear any previous results
+                        response.messages.forEach((message, index) => {
+                            emailMessages.append(`<p><strong>Email ${index + 1}:</strong> ${message}</p>`);
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    alert(`An error occurred: ${xhr.responseText}`);
+                }
+            });
+        });
+
+        // Handle schedule emails button click
+        $('#scheduleEmailsButton').click(function() {
+            const scheduleTime = $('#scheduleTime').val();
+            const batchSize = $('#batchSize').val();
+            const interval = $('#interval').val();
+
+            if (!scheduleTime && !batchSize && !interval) {
+                alert('Please specify scheduling or throttling parameters.');
+                return;
+            }
+            // Prepare the data to send in the POST request
+            const requestData = {
+                scheduleTime: scheduleTime,
+                batchSize: batchSize,
+                interval: interval
+            };
+
+            $.ajax({
+                url: '/schedule_emails',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({requestData}),
+                success: function(response) {
+                    alert(response.status);
+                },
+                error: function(xhr) {
+                    alert(`An error occurred: ${xhr.responseText}`);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
 
