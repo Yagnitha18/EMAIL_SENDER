@@ -104,3 +104,34 @@ Upload CSV
 1. Set the schedule time, batch size, and interval in the form.
 2. Click "Schedule Emails" to start email sending.
 
+## Monitor Email Statuses
+The email statuses (e.g., Sent, Failed, Delivered, Opened) are displayed in real-time on the dashboard.
+
+## Directory Structure
+```bash
+├── app.py              # Main Flask application
+├── celeryapp.py        # Celery task definitions
+├── config.py           # Configuration settings (DB, SMTP)
+├── database.py         # Database utility functions
+├── email_utils.py      # Email generation and sending utilities
+├── static/css/style.css # CSS for the dashboard
+├── templates/
+│   └── dashboard.html  # HTML template for the dashboard
+├── uploads/            # Directory to store uploaded CSV files
+└── requirements.txt    # Python dependencies
+```
+
+## Dependencies
+- Flask
+- Pandas
+- Celery
+- Redis
+- psycopg2
+- smtplib
+
+## Contribution
+Feel free to open issues or submit pull requests to improve this project.
+
+## License
+This project is licensed under the MIT License.
+Replace <your-username> and <your-repository-name> with your GitHub username and repository name before adding this file to your repository. Save this content as README.md in the root directory of your project.
