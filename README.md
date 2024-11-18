@@ -90,6 +90,11 @@ Run the application using:
 python app.py
 ```
 The application will be available at http://127.0.0.1:5000.
+## Preview
+
+Here is a preview of the web app interface:
+
+![Web App Preview](Email.jpg)
 
 ## Usage Instructions
 Upload CSV
